@@ -2,22 +2,27 @@
 #include <winsock2.h> //using 2nd version of winsock
 #include <iostream>
 
+
 #pragma warning(disable: 4996)
 
 SOCKET Connections[100]; //massive for 100 clients
 int Counter = 0; // 0 for first user that connected
 
 void ClientHandler(int index) {
-	char msg[256];
+	int msg_size;
 	while (true) {
-		recv(Connections[index], msg, sizeof(msg), NULL);
+		recv(Connections[index], (char*)&msg_size, sizeof(int), NULL);
+		char* msg = new char[msg_size + 1];
+		msg[msg_size] = '\0';
+		recv(Connections[index], msg, msg_size, NULL);
 		for (int i = 0; i < Counter; i++) {
 			if (i == index) { //avoid double send messege 
 				continue;
 			}
-
-			send(Connections[i], msg, sizeof(msg), NULL);
+			send(Connections[i], (char*)&msg_size, sizeof(int), NULL);
+			send(Connections[i], msg, msg_size, NULL);
 		}
+
 	}
 }
 
@@ -50,8 +55,10 @@ int main(int arg, char* argv[]) {  //check if lib loaded
 		}
 		else {
 			std::cout << "Client Connected!\n";
-			char msg[256] = "Hello. It's my first network program!";
-			send(newConnection, msg, sizeof(msg), NULL); 
+			std::string msg = "Hello. It's my first network program!";
+			int msg_size = msg.size();
+			send(newConnection, (char*)&msg_size, sizeof(int), NULL);
+			send(newConnection, msg.c_str(), msg_size, NULL);
 
 			Connections[i] = newConnection;
 			Counter++;
